@@ -115,6 +115,3 @@ GrowthOS/
 ├── package.json           # Root workspace config
 └── README.md
 ```
-
-## 📝 License
-This project is for demonstration and evaluation purposes.
