@@ -1,5 +1,4 @@
 import { Worker, Job } from "bullmq";
-import redis from "../lib/redis";
 import prisma from "../db/prisma";
 
 const CHANNEL_SIM_URL = process.env.CHANNEL_SIM_URL || "http://localhost:3001";
@@ -41,7 +40,7 @@ export const deliveryWorker = new Worker<DeliveryJobData>(
 
       // We successfully enqueued it to the simulator. The rest of the state
       // machine will be driven by webhooks coming back from the simulator.
-      
+
       // Update actualSent metric immediately
       await prisma.campaign.update({
         where: { id: campaignId },
@@ -54,7 +53,7 @@ export const deliveryWorker = new Worker<DeliveryJobData>(
     } catch (error: any) {
       // If we fail here, BullMQ will retry based on exponential backoff
       console.error(`Failed to send communication ${communicationId}:`, error.message);
-      
+
       // If we've exhausted retries, mark the communication as failed
       if (job.attemptsMade >= (job.opts.attempts || 3) - 1) {
         await prisma.communication.update({
@@ -77,7 +76,11 @@ export const deliveryWorker = new Worker<DeliveryJobData>(
     }
   },
   {
-    connection: redis,
+    connection: {
+      url: process.env.REDIS_URL || "redis://localhost:6379",
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    },
     concurrency: 50, // Process 50 messages concurrently
   }
 );

@@ -1,13 +1,16 @@
 import { Queue } from "bullmq";
-import redis from "../lib/redis";
 
 export const deliveryQueue = new Queue("campaign-delivery", {
-  connection: redis,
+  connection: {
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  },
   defaultJobOptions: {
     attempts: 3,
     backoff: {
       type: "exponential",
-      delay: 2000, // 2s, 4s, 8s
+      delay: 2000,
     },
     removeOnComplete: 1000,
     removeOnFail: 5000,
