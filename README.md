@@ -12,7 +12,11 @@ GrowthOS is an AI-native customer relationship management (CRM) platform designe
 
 ## 🛠️ Technology Stack
 
-This project is structured as a monorepo containing both the backend API and frontend web application.
+This project is structured as a monorepo containing the frontend web application, backend API, and a supporting simulator microservice.
+
+### Simulator Service (`services/channel-sim`)
+- **Runtime**: Node.js & Express
+- **Purpose**: A mock provider that simulates asynchronous SMS/WhatsApp/Email delivery and fires webhooks back to the core API.
 
 ### Backend (`apps/api`)
 - **Runtime**: Node.js & Express
@@ -87,6 +91,13 @@ cd apps/api
 npm run dev
 ```
 
+**Start the Channel Simulator:**
+Open a new terminal and run:
+```bash
+cd services/channel-sim
+npm run dev
+```
+
 **Start the Frontend Web App:**
 Open a new terminal and run:
 ```bash
@@ -112,6 +123,8 @@ GrowthOS/
 │       ├── app/           # Next.js App Router
 │       ├── components/    # React UI Components
 │       └── lib/
+├── services/
+│   └── channel-sim/       # Channel Simulator Microservice
 ├── package.json           # Root workspace config
 └── README.md
 ```
