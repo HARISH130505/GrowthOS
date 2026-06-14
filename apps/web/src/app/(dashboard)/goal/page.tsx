@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useUser } from "@clerk/nextjs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
-export default function GoalPlannerPage() {
+function GoalPlannerContent() {
   const searchParams = useSearchParams();
   const templateGoal = searchParams.get("template") || "";
   const { user } = useUser();
@@ -298,5 +298,13 @@ function AgentStatusCard({ title, status, icon: Icon }: { title: string, status:
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function GoalPlannerPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>}>
+      <GoalPlannerContent />
+    </Suspense>
   );
 }
