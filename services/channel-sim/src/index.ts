@@ -9,6 +9,11 @@ const CRM_WEBHOOK_URL = process.env.CRM_WEBHOOK_URL || "http://localhost:4000/ap
 app.use(cors());
 app.use(express.json());
 
+// Health check for UptimeRobot
+app.get("/health", (req, res) => {
+  res.json({ status: "simulator awake" });
+});
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function sendWebhook(communicationId: string, event: string, metadata?: any) {
