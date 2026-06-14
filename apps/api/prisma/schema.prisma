@@ -1,0 +1,236 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns Campaign[]
+  agentRuns AgentRun[]
+}
+
+model Customer {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  phone            String?
+  city             String?
+  totalSpent       Float     @default(0)
+  lastPurchaseDate DateTime?
+  preferredChannel Channel   @default(EMAIL)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  orders         Order[]
+  communications Communication[]
+  segmentMembers SegmentMember[]
+
+  @@index([city])
+  @@index([totalSpent])
+  @@index([lastPurchaseDate])
+  @@index([preferredChannel])
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  customerId String
+  amount     Float
+  items      Json
+  orderDate  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([orderDate])
+  @@index([amount])
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  criteria    Json
+  size        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaigns Campaign[]
+  members   SegmentMember[]
+}
+
+model SegmentMember {
+  id         String   @id @default(cuid())
+  segmentId  String
+  customerId String
+  createdAt  DateTime @default(now())
+
+  segment  Segment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([segmentId, customerId])
+  @@index([segmentId])
+  @@index([customerId])
+}
+
+model Campaign {
+  id              String         @id @default(cuid())
+  name            String
+  status          CampaignStatus @default(DRAFT)
+  goal            String
+  channel         Channel
+  messageTemplate Json
+  segmentId       String
+  userId          String
+  scheduledAt     DateTime?
+  launchedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // AI-generated predictions
+  estimatedOpenRate       Float?
+  estimatedClickRate      Float?
+  estimatedConversionRate Float?
+  estimatedRevenue        Float?
+  confidenceScore         Float?
+
+  // Actual metrics (updated via webhooks)
+  actualSent      Int @default(0)
+  actualDelivered Int @default(0)
+  actualOpened    Int @default(0)
+  actualClicked   Int @default(0)
+  actualPurchased Int @default(0)
+  actualFailed    Int @default(0)
+
+  segment        Segment         @relation(fields: [segmentId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
+  communications Communication[]
+  agentRuns      AgentRun[]
+
+  @@index([status])
+  @@index([userId])
+  @@index([segmentId])
+  @@index([launchedAt])
+  @@index([createdAt])
+}
+
+model Communication {
+  id         String              @id @default(cuid())
+  campaignId String
+  customerId String
+  channel    Channel
+  message    String
+  status     CommunicationStatus @default(PENDING)
+  sentAt     DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  campaign Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer             @relation(fields: [customerId], references: [id])
+  events   CommunicationEvent[]
+
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model CommunicationEvent {
+  id              String   @id @default(cuid())
+  communicationId String
+  event           String
+  metadata        Json?
+  occurredAt      DateTime @default(now())
+
+  communication Communication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+
+  @@index([communicationId])
+  @@index([event])
+  @@index([occurredAt])
+}
+
+model AgentRun {
+  id         String      @id @default(cuid())
+  agentType  String
+  status     AgentStatus @default(RUNNING)
+  input      Json
+  output     Json?
+  error      String?
+  userId     String
+  campaignId String?
+  durationMs Int?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  @@index([agentType])
+  @@index([userId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Opportunity {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String
+  opportunityScore    Float
+  potentialRevenue    Float
+  estimatedConversion Float
+  confidenceScore     Float
+  segmentCriteria     Json
+  recommendedChannel  Channel
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([opportunityScore])
+  @@index([status])
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  READ
+  CLICKED
+  PURCHASED
+  FAILED
+}
+
+enum Channel {
+  EMAIL
+  SMS
+  WHATSAPP
+  RCS
+}
+
+enum AgentStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
